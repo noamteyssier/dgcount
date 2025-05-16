@@ -21,3 +21,6 @@ target/
 /target
 
 Cargo.lock
+
+data/*
+*.out.tsv
