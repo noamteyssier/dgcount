@@ -175,6 +175,8 @@ impl Library {
             }
             output.write_all(b"\n")?;
         }
+
+        output.flush()?;
         Ok(())
     }
 }

@@ -1,7 +1,5 @@
-use std::io::stdout;
-
 use anyhow::{Result, bail};
-use binseq::{BinseqReader, ParallelReader};
+use binseq::ParallelReader;
 use clap::Parser;
 
 mod cli;
@@ -23,15 +21,10 @@ fn main() -> Result<()> {
     let library = Library::new_arc(&args.library)?;
 
     // Initialize readers
-    let mut readers = Vec::default();
-    args.binseq.iter().try_for_each(|path| -> Result<()> {
-        let reader = BinseqReader::new(path)?;
-        if !reader.is_paired() {
-            bail!("dgcount expects paired inputs.")
-        }
-        readers.push(reader);
-        Ok(())
-    })?;
+    let readers = args.readers()?;
+
+    // Initialize output
+    let mut output = args.output_handle()?;
 
     // Process readers
     let mut counts = Vec::default();
@@ -44,7 +37,7 @@ fn main() -> Result<()> {
     }
 
     // Print output and stats
-    library.pprint(&counts, &mut stdout())?;
+    library.pprint(&counts, &mut output)?;
     stats.iter().for_each(|x| eprintln!("{x:#?}"));
     Ok(())
 }

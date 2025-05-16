@@ -1,3 +1,10 @@
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+};
+
+use anyhow::{Result, bail};
+use binseq::BinseqReader;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -23,5 +30,22 @@ impl Args {
         } else {
             self.threads.min(num_cpus::get())
         }
+    }
+
+    pub fn readers(&self) -> Result<Vec<BinseqReader>> {
+        let mut readers = Vec::default();
+        for path in self.binseq.iter() {
+            let reader = BinseqReader::new(path)?;
+            if !reader.is_paired() {
+                bail!("dgcount expects paired inputs.")
+            }
+            readers.push(reader);
+        }
+        Ok(readers)
+    }
+
+    pub fn output_handle(&self) -> Result<Box<dyn Write>> {
+        let handle = File::create(&self.output).map(BufWriter::new)?;
+        Ok(Box::new(handle))
     }
 }
