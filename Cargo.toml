@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.98"
 binseq = "0.6.3"
+clap = { version = "4.5.38", features = ["derive"] }
+num_cpus = "1.16.0"
