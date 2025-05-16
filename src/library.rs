@@ -48,7 +48,8 @@ impl Counts {
             .for_each(|(i, j)| *i += j);
     }
 
-    pub fn clear(&mut self) {
+    /// Reset all internal counts to zero
+    pub fn reset(&mut self) {
         self.inner.iter_mut().for_each(|x| *x = 0);
     }
 }

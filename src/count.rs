@@ -69,9 +69,9 @@ impl ParallelProcessor for CountDualGuides {
 
     fn on_batch_complete(&mut self) -> binseq::Result<()> {
         {
-            self.global_counts.lock().ingest(&self.local_counts);
+            self.global_counts.lock().ingest(&mut self.local_counts);
         } // drop lock
-        self.local_counts.clear();
+        self.local_counts.reset();
         Ok(())
     }
 }
