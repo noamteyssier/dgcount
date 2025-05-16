@@ -1,3 +1,5 @@
+use std::io::stdout;
+
 use anyhow::{Result, bail};
 use binseq::{BinseqReader, ParallelReader};
 use clap::Parser;
@@ -17,7 +19,8 @@ fn main() -> Result<()> {
     if !reader.is_paired() {
         bail!("dgcount expects paired inputs.")
     }
-    let proc = CountDualGuides::new(library);
+    let proc = CountDualGuides::new(library.clone());
     reader.process_parallel(proc.clone(), args.threads())?;
+    library.pprint(&proc.counts(), &mut stdout())?;
     Ok(())
 }
