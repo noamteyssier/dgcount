@@ -10,17 +10,23 @@ use crate::library::{Counts, Library};
 pub struct Statistics {
     n_records: usize,
     n_mapped: usize,
+    missing_a: usize,
+    missing_b: usize,
 }
 impl Statistics {
     fn reset(&mut self) {
         self.n_records = 0;
         self.n_mapped = 0;
+        self.missing_a = 0;
+        self.missing_b = 0;
     }
 }
 impl AddAssign for Statistics {
     fn add_assign(&mut self, rhs: Self) {
         self.n_records += rhs.n_records;
         self.n_mapped += rhs.n_mapped;
+        self.missing_a += rhs.missing_a;
+        self.missing_b += rhs.missing_b;
     }
 }
 
@@ -84,13 +90,24 @@ impl ParallelProcessor for CountDualGuides {
     fn process_record<R: BinseqRecord>(&mut self, record: R) -> binseq::Result<()> {
         self.decode_record(&record)?;
         self.local_stats.n_records += 1;
-        if let Some(tgt_i) = self.match_protospacer(&self.sbuf)
-            && let Some(tgt_j) = self.match_protospacer(&self.xbuf)
-        {
-            self.match_pair(tgt_i, tgt_j).map(|p_idx| {
-                self.local_stats.n_mapped += 1;
-                self.local_counts.inc(p_idx)
-            });
+
+        match (
+            self.match_protospacer(&self.sbuf),
+            self.match_protospacer(&self.xbuf),
+        ) {
+            (Some(i), Some(j)) => {
+                self.match_pair(i, j).map(|p_idx| {
+                    self.local_stats.n_mapped += 1;
+                    self.local_counts.inc(p_idx)
+                });
+            }
+            (Some(_), None) => {
+                self.local_stats.missing_b += 1;
+            }
+            (None, Some(_)) => {
+                self.local_stats.missing_a += 1;
+            }
+            (None, None) => {}
         }
         Ok(())
     }
