@@ -2,6 +2,12 @@
 name = "dgcount"
 version = "0.1.0"
 edition = "2024"
+authors = ["Noam Teyssier"]
+description = "Dual guide CRISPR counter"
+license = "MIT"
+repository = "https://github.com/noamteyssier/dgcount"
+keywords = ["CRISPR", "dual guide", "sgRNA", "guide counter"]
+categories = ["command-line-utilities", "science::bioinformatics"]
 
 [dependencies]
 anyhow = "1.0.98"
