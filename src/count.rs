@@ -41,7 +41,7 @@ impl CountDualGuides {
     }
 
     fn match_protospacer(&self, buffer: &[u8]) -> Option<usize> {
-        for subseq in buffer.chunks(self.library.slen) {
+        for subseq in buffer.windows(self.library.slen) {
             if let Some(tgt) = self.library.contains_protospacer(subseq) {
                 return Some(tgt);
             }
@@ -56,14 +56,12 @@ impl CountDualGuides {
 impl ParallelProcessor for CountDualGuides {
     fn process_record<R: BinseqRecord>(&mut self, record: R) -> binseq::Result<()> {
         self.decode_record(&record)?;
-
         if let Some(tgt_i) = self.match_protospacer(&self.sbuf)
             && let Some(tgt_j) = self.match_protospacer(&self.xbuf)
         {
             self.match_pair(tgt_i, tgt_j)
                 .map(|p_idx| self.local_counts.inc(p_idx));
         }
-
         Ok(())
     }
 
