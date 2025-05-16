@@ -17,7 +17,7 @@ pub struct Args {
     /// Input files (*.bq / *.vbq)
     pub binseq: Vec<String>,
 
-    #[clap(short, long, default_value = "out.tsv")]
+    #[clap(short, long, default_value = "dgcount.out.tsv")]
     pub output: String,
 
     #[clap(short = 'T', long, default_value_t = 0)]
