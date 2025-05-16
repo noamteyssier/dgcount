@@ -7,8 +7,8 @@ pub struct Args {
     /// [gene, guide1, guide2]
     pub library: String,
 
-    /// Input file (*.bq / *.vbq)
-    pub binseq: String,
+    /// Input files (*.bq / *.vbq)
+    pub binseq: Vec<String>,
 
     #[clap(short, long, default_value = "out.tsv")]
     pub output: String,
