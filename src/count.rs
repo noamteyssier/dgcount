@@ -1,3 +1,4 @@
+use std::ops::AddAssign;
 use std::sync::Arc;
 
 use binseq::{BinseqRecord, ParallelProcessor};
@@ -5,13 +6,33 @@ use parking_lot::Mutex;
 
 use crate::library::{Counts, Library};
 
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Statistics {
+    n_records: usize,
+    n_mapped: usize,
+}
+impl Statistics {
+    fn reset(&mut self) {
+        self.n_records = 0;
+        self.n_mapped = 0;
+    }
+}
+impl AddAssign for Statistics {
+    fn add_assign(&mut self, rhs: Self) {
+        self.n_records += rhs.n_records;
+        self.n_mapped += rhs.n_mapped;
+    }
+}
+
 #[derive(Clone)]
 pub struct CountDualGuides {
     sbuf: Vec<u8>,
     xbuf: Vec<u8>,
     library: Arc<Library>,
     local_counts: Counts,
+    local_stats: Statistics,
     global_counts: Arc<Mutex<Counts>>,
+    global_stats: Arc<Mutex<Statistics>>,
 }
 impl CountDualGuides {
     pub fn new(library: Arc<Library>) -> Self {
@@ -20,12 +41,18 @@ impl CountDualGuides {
             xbuf: Vec::default(),
             local_counts: library.build_counts(),
             global_counts: Arc::new(Mutex::new(library.build_counts())),
+            local_stats: Statistics::default(),
+            global_stats: Arc::new(Mutex::new(Statistics::default())),
             library,
         }
     }
 
     pub fn counts(&self) -> Counts {
         self.global_counts.lock().clone()
+    }
+
+    pub fn stats(&self) -> Statistics {
+        *self.global_stats.lock()
     }
 
     fn clear_buffers(&mut self) {
@@ -56,11 +83,14 @@ impl CountDualGuides {
 impl ParallelProcessor for CountDualGuides {
     fn process_record<R: BinseqRecord>(&mut self, record: R) -> binseq::Result<()> {
         self.decode_record(&record)?;
+        self.local_stats.n_records += 1;
         if let Some(tgt_i) = self.match_protospacer(&self.sbuf)
             && let Some(tgt_j) = self.match_protospacer(&self.xbuf)
         {
-            self.match_pair(tgt_i, tgt_j)
-                .map(|p_idx| self.local_counts.inc(p_idx));
+            self.match_pair(tgt_i, tgt_j).map(|p_idx| {
+                self.local_stats.n_mapped += 1;
+                self.local_counts.inc(p_idx)
+            });
         }
         Ok(())
     }
@@ -69,7 +99,13 @@ impl ParallelProcessor for CountDualGuides {
         {
             self.global_counts.lock().ingest(&mut self.local_counts);
         } // drop lock
+
+        {
+            *self.global_stats.lock() += self.local_stats;
+        } // drop lock
+
         self.local_counts.reset();
+        self.local_stats.reset();
         Ok(())
     }
 }
