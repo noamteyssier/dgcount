@@ -6,7 +6,7 @@ authors = ["Noam Teyssier"]
 description = "Dual guide CRISPR counter"
 license = "MIT"
 repository = "https://github.com/noamteyssier/dgcount"
-keywords = ["CRISPR", "dual guide", "sgRNA", "guide counter"]
+keywords = ["CRISPR", "dual", "guide", "sgRNA", "counter"]
 categories = ["command-line-utilities", "science::bioinformatics"]
 
 [dependencies]
