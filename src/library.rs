@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use anyhow::{Result, bail};
 use serde::Deserialize;
@@ -73,5 +74,9 @@ impl Library {
             guide_pairs,
             gene_pairs,
         })
+    }
+
+    pub fn new_arc(path: &str) -> Result<Arc<Self>> {
+        Self::new(path).map(Arc::new)
     }
 }

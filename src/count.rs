@@ -1,15 +1,21 @@
+use std::sync::Arc;
+
 use binseq::{BinseqRecord, ParallelProcessor};
+
+use crate::library::Library;
 
 #[derive(Clone)]
 pub struct CountDualGuides {
     sbuf: Vec<u8>,
     xbuf: Vec<u8>,
+    library: Arc<Library>,
 }
 impl CountDualGuides {
-    pub fn new() -> Self {
+    pub fn new(library: Arc<Library>) -> Self {
         Self {
             sbuf: Vec::default(),
             xbuf: Vec::default(),
+            library,
         }
     }
     fn clear_buffers(&mut self) {
