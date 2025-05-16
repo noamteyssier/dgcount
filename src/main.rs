@@ -21,6 +21,6 @@ fn main() -> Result<()> {
     }
     let proc = CountDualGuides::new(library.clone());
     reader.process_parallel(proc.clone(), args.threads())?;
-    library.pprint(&proc.counts(), &mut stdout())?;
+    library.pprint(&[proc.counts()], &mut stdout())?;
     Ok(())
 }

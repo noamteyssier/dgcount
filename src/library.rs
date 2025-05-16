@@ -148,26 +148,32 @@ impl Library {
         self.pairmap.get(&(i, j)).copied()
     }
 
-    pub fn pprint<W: Write>(&self, counts: &Counts, output: &mut W) -> Result<()> {
-        assert_eq!(
-            counts.inner.len(),
-            self.guide_pairs.len(),
-            "Size mismatch between counts and guide_pairs"
-        );
-        assert_eq!(
-            counts.inner.len(),
-            self.gene_pairs.len(),
-            "Size mismatch between counts and gene_pairs"
-        );
-
-        for (c, (guide, gene)) in counts
-            .inner
-            .iter()
-            .zip(self.guide_pairs.iter().zip(self.gene_pairs.iter()))
-        {
-            writeln!(output, "{guide}\t{gene}\t{c}")?;
+    pub fn pprint<W: Write>(&self, counts: &[Counts], output: &mut W) -> Result<()> {
+        for v in counts {
+            assert_eq!(
+                v.inner.len(),
+                self.guide_pairs.len(),
+                "Size mismatch between counts and guide_pairs"
+            );
+            assert_eq!(
+                v.inner.len(),
+                self.gene_pairs.len(),
+                "Size mismatch between counts and gene_pairs"
+            );
         }
 
+        for (idx, (guide_pair, gene_pair)) in self
+            .guide_pairs
+            .iter()
+            .zip(self.gene_pairs.iter())
+            .enumerate()
+        {
+            write!(output, "{guide_pair}\t{gene_pair}")?;
+            for v in counts {
+                output.write_all(format!("\t{}", v.inner[idx]).as_bytes())?;
+            }
+            output.write_all(b"\n")?;
+        }
         Ok(())
     }
 }
