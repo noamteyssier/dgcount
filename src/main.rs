@@ -4,11 +4,15 @@ use clap::Parser;
 
 mod cli;
 mod count;
-pub use cli::Args;
+mod library;
+
+use cli::Args;
 use count::CountDualGuides;
+use library::Library;
 
 fn main() -> Result<()> {
     let args = Args::parse();
+    let library = Library::new(&args.library)?;
     let reader = BinseqReader::new(&args.binseq)?;
     if !reader.is_paired() {
         bail!("dgcount expects paired inputs.")
