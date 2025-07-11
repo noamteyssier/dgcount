@@ -9,9 +9,9 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub struct Args {
-    /// Input library (3-column tsv) no header
+    /// Input library (4-column tsv) no header
     ///
-    /// [gene, guide1, guide2]
+    /// [guide, gene, seq1, seq2]
     pub library: String,
 
     /// Input files (*.bq / *.vbq)
