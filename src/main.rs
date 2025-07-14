@@ -18,7 +18,11 @@ fn main() -> Result<()> {
     }
 
     // Initialize library
-    let library = Library::new_arc(&args.library)?;
+    let library = if args.exact {
+        Library::new_exact_arc(&args.library)?
+    } else {
+        Library::new_arc(&args.library)?
+    };
 
     // Initialize readers
     let readers = args.readers()?;

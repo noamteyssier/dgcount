@@ -17,8 +17,13 @@ pub struct Args {
     /// Input files (*.bq / *.vbq)
     pub binseq: Vec<String>,
 
+    /// Output file
     #[clap(short, long, default_value = "dgcount.out.tsv")]
     pub output: String,
+
+    /// Exact matching only [default: 1 mismatch]
+    #[clap(short, long)]
+    pub exact: bool,
 
     #[clap(short = 'T', long, default_value_t = 0)]
     threads: usize,
