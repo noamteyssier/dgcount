@@ -170,12 +170,10 @@ impl Library {
     pub fn contains_protospacer(&self, seq: &[u8]) -> Option<usize> {
         if self.exact {
             self.seqmap.get(seq).copied()
+        } else if let Some(parent) = self.disambiseq.get_parent(seq) {
+            self.seqmap.get(parent.sequence()).copied()
         } else {
-            if let Some(parent) = self.disambiseq.get_parent(seq) {
-                self.seqmap.get(parent.sequence()).copied()
-            } else {
-                None
-            }
+            None
         }
     }
 

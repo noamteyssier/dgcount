@@ -13,7 +13,7 @@ use library::Library;
 fn main() -> Result<()> {
     // Load arguments
     let args = Args::parse();
-    if args.binseq.len() < 1 {
+    if args.binseq.is_empty() {
         bail!("Requires at least one input file. Run `--help` for CLI arguments")
     }
 
