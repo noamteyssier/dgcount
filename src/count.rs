@@ -82,7 +82,7 @@ impl CountDualGuides {
         self.xbuf.clear();
     }
 
-    fn decode_record<R: BinseqRecord>(&mut self, ref record: R) -> binseq::Result<()> {
+    fn decode_record<R: BinseqRecord>(&mut self, record: R) -> binseq::Result<()> {
         self.clear_buffers();
         record.decode_s(&mut self.sbuf)?;
         record.decode_x(&mut self.xbuf)?;
