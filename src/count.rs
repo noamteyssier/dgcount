@@ -1,12 +1,15 @@
+use std::io::stderr;
 use std::ops::AddAssign;
 use std::sync::Arc;
 
+use anyhow::Result;
 use binseq::{BinseqRecord, ParallelProcessor};
 use parking_lot::Mutex;
+use serde::Serialize;
 
 use crate::library::{Counts, Library};
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize)]
 pub struct Statistics {
     n_records: usize,
     n_mapped: usize,
@@ -28,6 +31,19 @@ impl AddAssign for Statistics {
         self.missing_a += rhs.missing_a;
         self.missing_b += rhs.missing_b;
     }
+}
+
+pub fn eprint_stats(stats: &[Statistics]) -> Result<()> {
+    let mut csv_writer = csv::WriterBuilder::default()
+        .delimiter(b'\t')
+        .has_headers(true)
+        .from_writer(stderr());
+    for stat in stats {
+        csv_writer.serialize(stat)?;
+    }
+    csv_writer.flush()?;
+
+    Ok(())
 }
 
 #[derive(Clone)]

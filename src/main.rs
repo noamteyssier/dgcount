@@ -7,7 +7,7 @@ mod count;
 mod library;
 
 use cli::Args;
-use count::CountDualGuides;
+use count::{CountDualGuides, eprint_stats};
 use library::Library;
 
 fn main() -> Result<()> {
@@ -42,6 +42,6 @@ fn main() -> Result<()> {
 
     // Print output and stats
     library.pprint(&counts, &mut output)?;
-    stats.iter().for_each(|x| eprintln!("{x:#?}"));
+    eprint_stats(&stats)?;
     Ok(())
 }
