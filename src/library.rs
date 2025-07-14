@@ -118,7 +118,7 @@ impl Library {
                 idx
             };
 
-            if pairmap.get(&(tgt_i, tgt_j)).is_some() {
+            if pairmap.contains_key(&(tgt_i, tgt_j)) {
                 bail!("Duplicate protospacer pair found in record: {record:?}")
             } else {
                 let pair_id = pairmap.len();
