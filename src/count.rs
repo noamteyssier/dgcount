@@ -112,10 +112,10 @@ impl ParallelProcessor for CountDualGuides {
             self.match_protospacer(&self.xbuf),
         ) {
             (Some(i), Some(j)) => {
-                self.match_pair(i, j).map(|p_idx| {
+                if let Some(p_idx) = self.match_pair(i, j) {
                     self.local_stats.n_mapped += 1;
                     self.local_counts.inc(p_idx)
-                });
+                }
             }
             (Some(_), None) => {
                 self.local_stats.missing_b += 1;
