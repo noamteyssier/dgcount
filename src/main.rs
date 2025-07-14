@@ -7,7 +7,7 @@ mod count;
 mod library;
 
 use cli::Args;
-use count::CountDualGuides;
+use count::{CountDualGuides, eprint_stats};
 use library::Library;
 
 fn main() -> Result<()> {
@@ -18,7 +18,11 @@ fn main() -> Result<()> {
     }
 
     // Initialize library
-    let library = Library::new_arc(&args.library)?;
+    let library = if args.exact {
+        Library::new_exact_arc(&args.library)?
+    } else {
+        Library::new_arc(&args.library)?
+    };
 
     // Initialize readers
     let readers = args.readers()?;
@@ -38,6 +42,6 @@ fn main() -> Result<()> {
 
     // Print output and stats
     library.pprint(&counts, &mut output)?;
-    stats.iter().for_each(|x| eprintln!("{x:#?}"));
+    eprint_stats(&stats)?;
     Ok(())
 }

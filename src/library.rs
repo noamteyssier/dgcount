@@ -3,6 +3,7 @@ use std::io::Write;
 use std::sync::Arc;
 
 use anyhow::{Result, bail};
+use disambiseq::Disambibyte;
 use serde::Deserialize;
 
 type ByteString = Vec<u8>;
@@ -64,8 +65,12 @@ pub struct Library {
     guide_pairs: Vec<String>,
     /// Gene pair names
     gene_pairs: Vec<String>,
+    /// Disambiguation sequence
+    disambiseq: Disambibyte,
     /// Size of protospacers
     pub slen: usize,
+    /// Exact matching only
+    pub exact: bool,
 }
 impl Library {
     pub fn new(path: &str) -> Result<Self> {
@@ -124,12 +129,20 @@ impl Library {
             gene_pairs.push(record.gene_pair_name);
         }
 
+        // Get all unique protospacer sequences
+        let all_sequences = seqmap.keys().cloned().collect::<Vec<_>>();
+
+        // Create all unambiguous one-off mismatches
+        let disambiseq = Disambibyte::from_slice(&all_sequences);
+
         Ok(Self {
             seqmap,
             pairmap,
             guide_pairs,
             gene_pairs,
+            disambiseq,
             slen: slen.unwrap(),
+            exact: false,
         })
     }
 
@@ -137,12 +150,33 @@ impl Library {
         Self::new(path).map(Arc::new)
     }
 
+    pub fn new_exact_arc(path: &str) -> Result<Arc<Self>> {
+        Self::new(path).map(|mut x| {
+            x.set_exact();
+            Arc::new(x)
+        })
+    }
+
     pub fn build_counts(&self) -> Counts {
         Counts::new(self.pairmap.len())
     }
 
+    /// Sets the exact matching mode
+    pub fn set_exact(&mut self) {
+        self.exact = true;
+    }
+
+    /// Returns the index of the protospacer sequence after disambiguation
     pub fn contains_protospacer(&self, seq: &[u8]) -> Option<usize> {
-        self.seqmap.get(seq).copied()
+        if self.exact {
+            self.seqmap.get(seq).copied()
+        } else {
+            if let Some(parent) = self.disambiseq.get_parent(seq) {
+                self.seqmap.get(parent.sequence()).copied()
+            } else {
+                None
+            }
+        }
     }
 
     pub fn contains_pair(&self, i: usize, j: usize) -> Option<usize> {

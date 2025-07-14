@@ -34,3 +34,5 @@ Multiple samples can be provided at the CLI and a counts table is generated incl
 ```bash
 dgcount library.tsv sample1.bq sample2.bq sample3.bq
 ```
+
+> Note: By default `dgcount` will match unambiguous one-off mismatches to the library. If you want only *perfect* matches then use the `-x`or `--exact` flag.
