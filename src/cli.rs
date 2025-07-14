@@ -22,7 +22,7 @@ pub struct Args {
     pub output: String,
 
     /// Exact matching only [default: 1 mismatch]
-    #[clap(short, long)]
+    #[clap(short = 'x', long)]
     pub exact: bool,
 
     #[clap(short = 'T', long, default_value_t = 0)]
