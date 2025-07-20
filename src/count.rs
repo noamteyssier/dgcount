@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use binseq::{BinseqRecord, ParallelProcessor};
+use paraseq::prelude::PairedParallelProcessor;
 use parking_lot::Mutex;
 use serde::Serialize;
 
@@ -129,6 +130,50 @@ impl ParallelProcessor for CountDualGuides {
     }
 
     fn on_batch_complete(&mut self) -> binseq::Result<()> {
+        {
+            self.global_counts.lock().ingest(&self.local_counts);
+        } // drop lock
+
+        {
+            *self.global_stats.lock() += self.local_stats;
+        } // drop lock
+
+        self.local_counts.reset();
+        self.local_stats.reset();
+        Ok(())
+    }
+}
+
+impl PairedParallelProcessor for CountDualGuides {
+    fn process_record_pair<Rf: paraseq::Record>(
+        &mut self,
+        record1: Rf,
+        record2: Rf,
+    ) -> paraseq::parallel::Result<()> {
+        self.local_stats.n_records += 1;
+
+        match (
+            self.match_protospacer(&record1.seq()),
+            self.match_protospacer(&record2.seq()),
+        ) {
+            (Some(i), Some(j)) => {
+                if let Some(p_idx) = self.match_pair(i, j) {
+                    self.local_stats.n_mapped += 1;
+                    self.local_counts.inc(p_idx)
+                }
+            }
+            (Some(_), None) => {
+                self.local_stats.missing_b += 1;
+            }
+            (None, Some(_)) => {
+                self.local_stats.missing_a += 1;
+            }
+            (None, None) => {}
+        }
+        Ok(())
+    }
+
+    fn on_batch_complete(&mut self) -> Result<(), paraseq::ProcessError> {
         {
             self.global_counts.lock().ingest(&self.local_counts);
         } // drop lock
