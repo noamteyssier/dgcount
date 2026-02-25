@@ -91,8 +91,8 @@ impl ParallelProcessor for CountDualGuides {
         self.local_stats.n_records += 1;
 
         match (
-            self.match_protospacer(&record.sseq()),
-            self.match_protospacer(&record.xseq()),
+            self.match_protospacer(record.sseq()),
+            self.match_protospacer(record.xseq()),
         ) {
             (Some(i), Some(j)) => {
                 if let Some(p_idx) = self.match_pair(i, j) {

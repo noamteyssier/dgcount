@@ -95,10 +95,10 @@ impl Library {
             let tgt_i = if let Some(idx) = seqmap.get(record.proto_a.as_bytes()) {
                 *idx
             } else {
-                if let Some(s) = slen {
-                    if record.proto_a.len() != s {
-                        bail!("Size mismatch found in record: {record:?}");
-                    }
+                if let Some(s) = slen
+                    && record.proto_a.len() != s
+                {
+                    bail!("Size mismatch found in record: {record:?}");
                 }
                 let idx = seqmap.len();
                 seqmap.insert(record.proto_a.as_bytes().to_vec(), idx);
@@ -108,10 +108,10 @@ impl Library {
             let tgt_j = if let Some(idx) = seqmap.get(record.proto_b.as_bytes()) {
                 *idx
             } else {
-                if let Some(s) = slen {
-                    if record.proto_b.len() != s {
-                        bail!("Size mismatch found in record: {record:?}");
-                    }
+                if let Some(s) = slen
+                    && record.proto_b.len() != s
+                {
+                    bail!("Size mismatch found in record: {record:?}");
                 }
                 let idx = seqmap.len();
                 seqmap.insert(record.proto_b.as_bytes().to_vec(), idx);
