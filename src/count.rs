@@ -73,15 +73,6 @@ impl CountDualGuides {
         *self.global_stats.lock()
     }
 
-    fn match_protospacer(&self, buffer: &[u8]) -> Option<usize> {
-        for subseq in buffer.windows(self.library.slen) {
-            if let Some(tgt) = self.library.contains_protospacer(subseq) {
-                return Some(tgt);
-            }
-        }
-        None
-    }
-
     fn match_pair(&self, i: usize, j: usize) -> Option<usize> {
         self.library.contains_pair(i, j)
     }
@@ -91,8 +82,8 @@ impl ParallelProcessor for CountDualGuides {
         self.local_stats.n_records += 1;
 
         match (
-            self.match_protospacer(record.sseq()),
-            self.match_protospacer(record.xseq()),
+            self.library.contains_protospacer(record.sseq()),
+            self.library.contains_protospacer(record.xseq()),
         ) {
             (Some(i), Some(j)) => {
                 if let Some(p_idx) = self.match_pair(i, j) {
