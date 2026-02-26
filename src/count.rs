@@ -48,8 +48,6 @@ pub fn eprint_stats(stats: &[Statistics]) -> Result<()> {
 
 #[derive(Clone)]
 pub struct CountDualGuides {
-    sbuf: Vec<u8>,
-    xbuf: Vec<u8>,
     library: Arc<Library>,
     local_counts: Counts,
     local_stats: Statistics,
@@ -59,8 +57,6 @@ pub struct CountDualGuides {
 impl CountDualGuides {
     pub fn new(library: Arc<Library>) -> Self {
         Self {
-            sbuf: Vec::default(),
-            xbuf: Vec::default(),
             local_counts: library.build_counts(),
             global_counts: Arc::new(Mutex::new(library.build_counts())),
             local_stats: Statistics::default(),
@@ -77,39 +73,17 @@ impl CountDualGuides {
         *self.global_stats.lock()
     }
 
-    fn clear_buffers(&mut self) {
-        self.sbuf.clear();
-        self.xbuf.clear();
-    }
-
-    fn decode_record<R: BinseqRecord>(&mut self, record: R) -> binseq::Result<()> {
-        self.clear_buffers();
-        record.decode_s(&mut self.sbuf)?;
-        record.decode_x(&mut self.xbuf)?;
-        Ok(())
-    }
-
-    fn match_protospacer(&self, buffer: &[u8]) -> Option<usize> {
-        for subseq in buffer.windows(self.library.slen) {
-            if let Some(tgt) = self.library.contains_protospacer(subseq) {
-                return Some(tgt);
-            }
-        }
-        None
-    }
-
     fn match_pair(&self, i: usize, j: usize) -> Option<usize> {
         self.library.contains_pair(i, j)
     }
 }
 impl ParallelProcessor for CountDualGuides {
     fn process_record<R: BinseqRecord>(&mut self, record: R) -> binseq::Result<()> {
-        self.decode_record(&record)?;
         self.local_stats.n_records += 1;
 
         match (
-            self.match_protospacer(&self.sbuf),
-            self.match_protospacer(&self.xbuf),
+            self.library.contains_protospacer(record.sseq()),
+            self.library.contains_protospacer(record.xseq()),
         ) {
             (Some(i), Some(j)) => {
                 if let Some(p_idx) = self.match_pair(i, j) {

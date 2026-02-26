@@ -3,10 +3,9 @@ use std::io::Write;
 use std::sync::Arc;
 
 use anyhow::{Result, bail};
-use disambiseq::Disambibyte;
+use seqhash::{SeqHash, SeqHashBuilder};
 use serde::Deserialize;
 
-type ByteString = Vec<u8>;
 type IndexPair = (usize, usize);
 
 #[derive(Deserialize, Debug)]
@@ -57,8 +56,6 @@ impl Counts {
 
 #[derive(Clone)]
 pub struct Library {
-    /// Maps each unique protospacer to their protospacer index
-    seqmap: HashMap<ByteString, usize>,
     /// Maps each unique index pair to their pair index
     pairmap: HashMap<IndexPair, usize>,
     /// Guide pair names
@@ -66,15 +63,12 @@ pub struct Library {
     /// Gene pair names
     gene_pairs: Vec<String>,
     /// Disambiguation sequence
-    disambiseq: Disambibyte,
-    /// Size of protospacers
-    pub slen: usize,
-    /// Exact matching only
-    pub exact: bool,
+    seqhash: SeqHash,
 }
 impl Library {
-    pub fn new(path: &str) -> Result<Self> {
+    pub fn new(path: &str, exact: bool) -> Result<Self> {
         let mut seqmap = HashMap::default();
+        let mut parents = Vec::default();
         let mut pairmap = HashMap::default();
         let mut guide_pairs = Vec::default();
         let mut gene_pairs = Vec::default();
@@ -85,38 +79,32 @@ impl Library {
             .delimiter(b'\t')
             .from_path(path)?;
 
+        // Inserts a sequence into the global sequence hashmap and returns its unique sequence index
+        let insert_to_seqmap =
+            |seq: &[u8], seqmap: &mut HashMap<Vec<u8>, usize>, parents: &mut Vec<_>| {
+                if let Some(idx) = seqmap.get(seq) {
+                    *idx
+                } else {
+                    let idx = seqmap.len();
+                    seqmap.insert(seq.to_vec(), idx);
+                    parents.push(seq.to_vec());
+                    idx
+                }
+            };
+
         for record in reader.into_deserialize() {
             let record: GuideRecord = record?;
 
-            if slen.is_none() {
+            if let Some(slen) = slen {
+                if record.proto_a.len() != slen || record.proto_b.len() != slen {
+                    bail!("Size mismatch found in record: {record:?}");
+                }
+            } else {
                 slen = Some(record.proto_a.len());
             }
 
-            let tgt_i = if let Some(idx) = seqmap.get(record.proto_a.as_bytes()) {
-                *idx
-            } else {
-                if let Some(s) = slen {
-                    if record.proto_a.len() != s {
-                        bail!("Size mismatch found in record: {record:?}");
-                    }
-                }
-                let idx = seqmap.len();
-                seqmap.insert(record.proto_a.as_bytes().to_vec(), idx);
-                idx
-            };
-
-            let tgt_j = if let Some(idx) = seqmap.get(record.proto_b.as_bytes()) {
-                *idx
-            } else {
-                if let Some(s) = slen {
-                    if record.proto_b.len() != s {
-                        bail!("Size mismatch found in record: {record:?}");
-                    }
-                }
-                let idx = seqmap.len();
-                seqmap.insert(record.proto_b.as_bytes().to_vec(), idx);
-                idx
-            };
+            let tgt_i = insert_to_seqmap(record.proto_a.as_bytes(), &mut seqmap, &mut parents);
+            let tgt_j = insert_to_seqmap(record.proto_b.as_bytes(), &mut seqmap, &mut parents);
 
             if pairmap.contains_key(&(tgt_i, tgt_j)) {
                 bail!("Duplicate protospacer pair found in record: {record:?}")
@@ -130,51 +118,35 @@ impl Library {
         }
 
         // Get all unique protospacer sequences
-        let all_sequences = seqmap.keys().cloned().collect::<Vec<_>>();
 
         // Create all unambiguous one-off mismatches
-        let disambiseq = Disambibyte::from_slice(&all_sequences);
+        let mut builder = SeqHashBuilder::default();
+        if exact {
+            builder = builder.exact();
+        }
+        let seqhash = builder.build(&parents)?;
 
         Ok(Self {
-            seqmap,
             pairmap,
             guide_pairs,
             gene_pairs,
-            disambiseq,
-            slen: slen.unwrap(),
-            exact: false,
+            seqhash,
         })
     }
 
-    pub fn new_arc(path: &str) -> Result<Arc<Self>> {
-        Self::new(path).map(Arc::new)
-    }
-
-    pub fn new_exact_arc(path: &str) -> Result<Arc<Self>> {
-        Self::new(path).map(|mut x| {
-            x.set_exact();
-            Arc::new(x)
-        })
+    pub fn new_arc(path: &str, exact: bool) -> Result<Arc<Self>> {
+        Self::new(path, exact).map(Arc::new)
     }
 
     pub fn build_counts(&self) -> Counts {
         Counts::new(self.pairmap.len())
     }
 
-    /// Sets the exact matching mode
-    pub fn set_exact(&mut self) {
-        self.exact = true;
-    }
-
     /// Returns the index of the protospacer sequence after disambiguation
     pub fn contains_protospacer(&self, seq: &[u8]) -> Option<usize> {
-        if self.exact {
-            self.seqmap.get(seq).copied()
-        } else if let Some(parent) = self.disambiseq.get_parent(seq) {
-            self.seqmap.get(parent.sequence()).copied()
-        } else {
-            None
-        }
+        self.seqhash
+            .query_sliding(seq)
+            .map(|(mat, _pos)| mat.parent_idx())
     }
 
     pub fn contains_pair(&self, i: usize, j: usize) -> Option<usize> {

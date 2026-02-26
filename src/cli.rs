@@ -14,7 +14,7 @@ pub struct Args {
     /// [guide, gene, seq1, seq2]
     pub library: String,
 
-    /// Input files (*.bq / *.vbq)
+    /// Input BINSEQ files
     pub binseq: Vec<String>,
 
     /// Output file
