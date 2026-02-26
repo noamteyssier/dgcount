@@ -97,10 +97,9 @@ impl Library {
 
             if slen.is_none() {
                 slen = Some(record.proto_a.len());
-            } else {
-                if record.proto_a.len() != slen.unwrap() || record.proto_b.len() != slen.unwrap() {
-                    bail!("Size mismatch found in record: {record:?}");
-                }
+            } else if record.proto_a.len() != slen.unwrap() || record.proto_b.len() != slen.unwrap()
+            {
+                bail!("Size mismatch found in record: {record:?}");
             }
 
             let tgt_i = insert_to_seqmap(record.proto_a.as_bytes(), &mut seqmap, &mut parents);
