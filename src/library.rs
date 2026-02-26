@@ -95,11 +95,12 @@ impl Library {
         for record in reader.into_deserialize() {
             let record: GuideRecord = record?;
 
-            if slen.is_none() {
+            if let Some(slen) = slen {
+                if record.proto_a.len() != slen || record.proto_b.len() != slen {
+                    bail!("Size mismatch found in record: {record:?}");
+                }
+            } else {
                 slen = Some(record.proto_a.len());
-            } else if record.proto_a.len() != slen.unwrap() || record.proto_b.len() != slen.unwrap()
-            {
-                bail!("Size mismatch found in record: {record:?}");
             }
 
             let tgt_i = insert_to_seqmap(record.proto_a.as_bytes(), &mut seqmap, &mut parents);
